@@ -1,0 +1,112 @@
+﻿@page "/MyPages/Coins"
+
+@using Crypto.Data.Models;
+@using Crypto.Data.Interfaces
+
+@inject ICryptoApiService _svc
+
+<h4>Enter any CryptoCoin symbol to see its value in $USD </h4>
+<h3 class="alert-danger blink">@badRequest</h3>
+<EditForm Model="@newCoin" OnValidSubmit="@GetAnotherCoinValue">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText id="symbol" @bind-Value="newCoin.Symbol" />
+    <InputNumber id="amountOwnded" @bind-Value="newCoin.AmountOwned" />
+
+
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+
+
+
+<h3>Coins</h3>
+@if (coin is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>AmountOwned</th>
+                <th>USD</th>
+                <th>EUR</th>
+                <th>BTC</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var coinDetails in listOfCoins)
+            {
+                <tr>
+                    <td>@coinDetails.Symbol</td>
+                    <td>@coinDetails.AmountOwned</td>
+                    <td>
+                        @if (coinDetails.Symbol != "USD")
+                        {
+                            @(coinDetails.USD * coinDetails.AmountOwned);
+                    }
+                    else
+                    {
+                        @coinDetails.USD;
+                    }
+                    </td>
+                    <td>
+                        @if (coinDetails.Symbol != "EUR")
+                        {
+                            @(coinDetails.EUR * coinDetails.AmountOwned);
+                        }
+                        else
+                        {
+                            @coinDetails.EUR;
+                        }
+                    </td>
+                    <td>
+                        @if (coinDetails.Symbol != "BTC")
+                        {
+                            @(coinDetails.BTC * coinDetails.AmountOwned);
+                        }
+                        else
+                        {
+                            @coinDetails.BTC;
+                        }
+                                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+
+@code {
+    private string badRequest;
+    private CryptoCoinModel coin = new CryptoCoinModel { Symbol = "BTC" };
+    private List<CryptoCoinModel> listOfCoins = new List<CryptoCoinModel>();
+    private CryptoCoinModel newCoin = new CryptoCoinModel();
+    protected override async Task OnInitializedAsync()
+    {
+        coin = await _svc.GetCryptoCoins("BTC", 1);
+        listOfCoins.Add(coin);
+    }
+
+    private async Task GetAnotherCoinValue()
+    {
+        newCoin = await _svc.GetCryptoCoins(newCoin.Symbol.ToUpper(), newCoin.AmountOwned);
+        if (newCoin.AmountOwned == 0)
+        {
+            badRequest = "INVALID ENTRY!  TRY AGAIN!";
+        }
+        else
+        {
+            listOfCoins.Add(newCoin);
+            newCoin = new CryptoCoinModel();
+            badRequest = "";
+        }
+    }
+}
